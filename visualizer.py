@@ -153,9 +153,10 @@ class DataVisualizer:
     @staticmethod
     def plot_simple_clusters(X_scaled, y, kmeans_labels, output_path=None):
         """
-        Створює спрощений scatter plot з двома основними кластерами.
+        Створює спрощений scatter plot, що показує перетин двох основних кластерів.
 
-        Схожий на класичну візуалізацію кластерів з чіткими групами.
+        Графік демонструє область перетину (overlap) між кластерами,
+        що є ключовим для розуміння якості кластеризації.
 
         Параметри:
             X_scaled (ndarray): Масштабовані дані для візуалізації (N x 2)
@@ -167,29 +168,30 @@ class DataVisualizer:
         fig, ax = plt.subplots(figsize=(10, 8), facecolor='white')
         ax.set_facecolor('white')
 
-        # Групуємо дані за кластерами (візуалізуємо тільки перші 2 кластери для спрощення)
+        # Групуємо дані за кластерами (візуалізуємо тільки перші 2 кластери)
         unique_clusters = np.unique(kmeans_labels)
 
         # Кольори для кластерів (червоний і синій як на скріншоті)
         cluster_colors = {
-            0: '#FF6B6B',  # червоний
-            1: '#4ECDC4',  # блакитний
+            0: '#E74C3C',  # червоний
+            1: '#3498DB',  # синій
         }
 
-        # Малюємо точки для кожного кластера
+        # Малюємо точки для кожного кластера з перетином
         for cluster_id in unique_clusters[:2]:  # Візуалізуємо тільки перші 2 кластери
             mask = (kmeans_labels == cluster_id)
             color = cluster_colors.get(cluster_id, '#999999')
 
-            # Малюємо точки (штрихування всередині кластера)
+            # Малюємо точки як штрихи (dash lines) для створення ефекту щільності
+            # Використовуємо 'o' marker з низькою прозорістю для візуалізації перетину
             plt.scatter(
                 X_scaled[mask, 0],
                 X_scaled[mask, 1],
                 c=color,
-                s=30,
-                alpha=0.4,
-                edgecolors='none',
-                marker='|'
+                s=50,
+                alpha=0.15,
+                marker='o',
+                edgecolors='none'
             )
 
             # Малюємо контур кластера
@@ -198,15 +200,16 @@ class DataVisualizer:
                 try:
                     points = X_scaled[mask]
                     hull = ConvexHull(points)
-                    # Малюємо контур
-                    for simplex in hull.simplices:
-                        plt.plot(points[simplex, 0], points[simplex, 1],
-                                color=color, linewidth=2, alpha=0.8)
-                    # Замикаємо контур
+
+                    # Замикаємо контур кластера
                     hull_points = points[hull.vertices]
                     hull_points = np.vstack([hull_points, hull_points[0]])
                     plt.plot(hull_points[:, 0], hull_points[:, 1],
-                            color=color, linewidth=2.5, alpha=0.9)
+                            color=color, linewidth=3, alpha=0.8, linestyle='-')
+
+                    # Заповнюємо область кластера з низькою прозорістю
+                    plt.fill(hull_points[:, 0], hull_points[:, 1],
+                            color=color, alpha=0.1)
                 except:
                     pass
 
@@ -230,6 +233,9 @@ class DataVisualizer:
         margin = 1.0
         ax.set_xlim(X_scaled[:, 0].min() - margin, X_scaled[:, 0].max() + margin)
         ax.set_ylim(X_scaled[:, 1].min() - margin, X_scaled[:, 1].max() + margin)
+
+        # Додаємо заголовок
+        plt.title("Візуалізація перетину кластерів", fontsize=14, pad=20)
 
         # Збереження або відображення графіка
         if output_path:
